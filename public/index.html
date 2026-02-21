@@ -1,1 +1,742 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temponovo · Gestor de Imágenes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f5f2ee;
+  --surface:  #ffffff;
+  --border:   #e8e2d9;
+  --accent:   #1a1a1a;
+  --gold:     #b8935a;
+  --gold2:    #d4aa72;
+  --text:     #1a1a1a;
+  --muted:    #8a8278;
+  --green:    #2d7a4f;
+  --red:      #c0392b;
+  --radius:   12px;
+  --shadow:   0 2px 20px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Login ───────────────────────────────── */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+
+#login-screen::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(184,147,90,0.15) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.login-box {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 52px 48px;
+  width: 360px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.login-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 36px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.login-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+  text-align: center;
+  letter-spacing: 0.15em;
+  margin-bottom: 14px;
+}
+.login-input:focus { border-color: var(--gold); }
+.login-input::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 0.05em; }
+
+.login-btn {
+  width: 100%;
+  background: var(--gold);
+  color: var(--accent);
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.login-btn:hover { background: var(--gold2); }
+.login-btn:active { transform: scale(0.98); }
+
+.login-error {
+  color: #ff6b6b;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+
+/* ── App ─────────────────────────────────── */
+#app { display: none; }
+
+header {
+  background: var(--accent);
+  padding: 0 40px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+.header-stats {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+}
+.header-stats strong { color: white; }
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.2s;
+}
+.btn-logout:hover { border-color: rgba(255,255,255,0.4); color: white; }
+
+/* ── Progress bar ─────────────────────────── */
+.progress-wrap { height: 3px; background: var(--border); }
+.progress-bar  { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); transition: width 0.5s ease; }
+
+/* ── Main layout ──────────────────────────── */
+#main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* ── Loading / empty states ───────────────── */
+#loading-state, #done-state {
+  text-align: center;
+  padding: 80px 40px;
+  color: var(--muted);
+}
+
+.big-spinner {
+  width: 48px; height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 20px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#done-state h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+#done-state p { color: var(--muted); font-size: 16px; }
+
+/* ── Product card ─────────────────────────── */
+#product-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-top {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.product-number {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.product-info { flex: 1; }
+
+.product-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.product-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.counter-badge {
+  font-size: 13px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.counter-badge strong { color: var(--accent); }
+
+/* ── Image search area ────────────────────── */
+.search-area {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.query-pill {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--gold);
+  font-family: monospace;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Candidates ───────────────────────────── */
+.candidates-area { padding: 20px 28px; }
+
+.searching-msg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.small-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.candidate {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  background: var(--bg);
+  position: relative;
+}
+.candidate:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.candidate.selected {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green);
+}
+.candidate.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 6px; right: 6px;
+  background: var(--green);
+  color: white;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+.candidate img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  background: white;
+}
+.candidate .img-num {
+  position: absolute;
+  bottom: 4px; left: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  background: rgba(255,255,255,0.8);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.img-error {
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--border);
+  background: var(--bg);
+}
+
+.no-results {
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Actions ──────────────────────────────── */
+.card-actions {
+  padding: 20px 28px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-approve {
+  background: var(--green);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-approve:hover { background: #256b44; }
+.btn-approve:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-skip {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-skip:hover { border-color: var(--red); color: var(--red); }
+
+.uploading-msg {
+  font-size: 13px;
+  color: var(--muted);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.action-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ── Toast ────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--accent);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Temponovo</div>
+    <div class="login-sub">Gestor de Imágenes</div>
+    <input class="login-input" type="password" id="login-pass" placeholder="Clave de acceso"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="login-error">Clave incorrecta</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-logo">Temponovo · Imágenes</div>
+    <div class="header-stats" id="header-stats"></div>
+    <button class="btn-logout" onclick="doLogout()">Salir</button>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div id="main">
+    <div id="loading-state">
+      <div class="big-spinner"></div>
+      <p>Cargando productos desde Odoo...</p>
+    </div>
+
+    <div id="done-state" style="display:none">
+      <h2>¡Todo al día! 🎉</h2>
+      <p>No hay productos sin imagen en este momento.</p>
+    </div>
+
+    <div id="product-card" style="display:none">
+      <div class="card-top">
+        <span class="product-number" id="prod-number"></span>
+        <div class="product-info">
+          <div class="product-name" id="prod-name"></div>
+          <div class="product-tags" id="prod-tags"></div>
+        </div>
+        <span class="counter-badge" id="prod-counter"></span>
+      </div>
+
+      <div class="candidates-area" id="candidates-area">
+        <div class="searching-msg">
+          <div class="small-spinner"></div>
+          Buscando imágenes...
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-approve" id="btn-approve" onclick="aprobar()" disabled>
+          ✅ Aprobar y subir a Odoo
+        </button>
+        <button class="btn-skip" onclick="saltar()">Saltar →</button>
+        <div class="uploading-msg" id="uploading-msg">
+          <div class="small-spinner"></div> Subiendo a Odoo...
+        </div>
+        <span class="action-note" id="action-note">Selecciona una imagen para aprobar</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let productos = [];
+let indice = 0;
+let imagenSeleccionada = null;
+let revisados = 0;
+
+// ── Auth ──────────────────────────────────────────────────
+async function doLogin() {
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    if (r.ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      cargarProductos();
+    } else {
+      err.style.display = 'block';
+    }
+  } catch(e) { err.style.display = 'block'; }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  location.reload();
+}
+
+// Check si ya está logueado
+async function checkAuth() {
+  const r = await fetch('/api/me');
+  const d = await r.json();
+  if (d.authenticated) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    cargarProductos();
+  }
+}
+
+// ── Productos ─────────────────────────────────────────────
+async function cargarProductos() {
+  document.getElementById('loading-state').style.display = 'block';
+  document.getElementById('product-card').style.display  = 'none';
+  document.getElementById('done-state').style.display    = 'none';
+
+  try {
+    const r = await fetch('/api/productos');
+    const d = await r.json();
+    productos = d.productos || [];
+    indice    = 0;
+    revisados = 0;
+
+    actualizarStats();
+
+    if (productos.length === 0) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('done-state').style.display    = 'block';
+    } else {
+      document.getElementById('loading-state').style.display = 'none';
+      mostrarProducto(0);
+    }
+  } catch(e) {
+    toast('❌ Error cargando productos: ' + e.message);
+  }
+}
+
+function actualizarStats() {
+  const total   = productos.length;
+  const quedan  = total - indice;
+  document.getElementById('header-stats').innerHTML =
+    `<span>Sin imagen <strong>${total}</strong></span>
+     <span>Revisados <strong>${revisados}</strong></span>
+     <span>Quedan <strong>${quedan}</strong></span>`;
+  const pct = total ? (revisados / total * 100) : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+// ── Mostrar producto ──────────────────────────────────────
+function mostrarProducto(idx) {
+  if (idx >= productos.length) {
+    document.getElementById('product-card').style.display = 'none';
+    document.getElementById('done-state').style.display   = 'block';
+    return;
+  }
+
+  const p = productos[idx];
+  imagenSeleccionada = null;
+
+  document.getElementById('product-card').style.display = 'block';
+  document.getElementById('prod-number').textContent    = `#${p.id}`;
+  document.getElementById('prod-name').textContent      = p.nombre;
+  document.getElementById('prod-counter').innerHTML     = `<strong>${idx + 1}</strong> / ${productos.length}`;
+
+  // Tags
+  const tags = [];
+  if (p.ref)      tags.push(`📌 ${p.ref}`);
+  if (p.categoria) tags.push(`📂 ${p.categoria}`);
+  document.getElementById('prod-tags').innerHTML = tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+  // Reset botón aprobar
+  document.getElementById('btn-approve').disabled = true;
+  document.getElementById('action-note').textContent = 'Selecciona una imagen para aprobar';
+  document.getElementById('uploading-msg').style.display = 'none';
+
+  // Buscar imágenes
+  buscarImagenes(p);
+}
+
+async function buscarImagenes(p) {
+  const area = document.getElementById('candidates-area');
+  area.innerHTML = `<div class="searching-msg"><div class="small-spinner"></div> Buscando imágenes para <em>${p.nombre}</em>...</div>`;
+
+  try {
+    const r = await fetch('/api/buscar-imagenes', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre: p.nombre, ref: p.ref, categoria: p.categoria })
+    });
+    const d = await r.json();
+
+    if (!d.urls || d.urls.length === 0) {
+      area.innerHTML = `<div class="no-results">🔍 No se encontraron imágenes. Usa el botón Saltar.</div>`;
+      return;
+    }
+
+    area.innerHTML = `
+      <div style="margin-bottom:10px; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted);">
+        Búsqueda: <span style="color:var(--gold); font-family:monospace; text-transform:none;">"${d.query}"</span>
+      </div>
+      <div class="candidates-grid">
+        ${d.urls.map((url, i) => `
+          <div class="candidate" onclick="seleccionar(this, '${url.replace(/'/g,"\\'")}')">
+            <img src="${url}" alt="img ${i+1}"
+                 onerror="this.parentElement.innerHTML='<div class=\\'img-error\\'>🖼️</div>'">
+            <span class="img-num">${i+1}</span>
+          </div>
+        `).join('')}
+      </div>`;
+  } catch(e) {
+    area.innerHTML = `<div class="no-results">❌ Error buscando imágenes</div>`;
+  }
+}
+
+function seleccionar(el, url) {
+  document.querySelectorAll('.candidate').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  imagenSeleccionada = url;
+  document.getElementById('btn-approve').disabled = false;
+  document.getElementById('action-note').textContent = 'Lista para subir a Odoo';
+}
+
+// ── Acciones ──────────────────────────────────────────────
+async function aprobar() {
+  if (!imagenSeleccionada) return;
+  const p = productos[indice];
+
+  document.getElementById('btn-approve').disabled = true;
+  document.getElementById('uploading-msg').style.display = 'flex';
+  document.getElementById('action-note').textContent = '';
+
+  try {
+    const r = await fetch('/api/subir-imagen', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ producto_id: p.id, imagen_url: imagenSeleccionada })
+    });
+    const d = await r.json();
+
+    if (d.ok) {
+      toast('✅ ' + p.nombre.substring(0, 40) + ' — imagen subida');
+      revisados++;
+      indice++;
+      actualizarStats();
+      setTimeout(() => mostrarProducto(indice), 400);
+    } else {
+      toast('❌ Error: ' + (d.error || 'No se pudo subir'));
+      document.getElementById('btn-approve').disabled = false;
+      document.getElementById('uploading-msg').style.display = 'none';
+    }
+  } catch(e) {
+    toast('❌ Error de conexión');
+    document.getElementById('btn-approve').disabled = false;
+    document.getElementById('uploading-msg').style.display = 'none';
+  }
+}
+
+function saltar() {
+  revisados++;
+  indice++;
+  actualizarStats();
+  mostrarProducto(indice);
+  toast('→ Saltado');
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Iniciar
+checkAuth();
+</script>
+</body>
+</html>
 
